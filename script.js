@@ -82,3 +82,94 @@ modal.addEventListener("click", (e) => {
         modal.style.display = "none";
     }
 });
+
+const wrapper = document.querySelector(".reviews-wrapper");
+const prevBtn = document.querySelector(".prev-btn");
+const nextBtn = document.querySelector(".next-btn");
+
+let reviews = [];
+let currentIndex = 0;
+
+async function fetchReview() {
+try {
+        const res = await fetch("https://corsproxy.io/?https://api.forismatic.com/api/1.0/?method=getQuote&format=jsonp&lang=ru&jsonp=?");
+        const text = await res.text();
+        
+        const jsonString = text.replace(/^[^(]*\(/, '').replace(/\)$/, '');
+        const data = JSON.parse(jsonString);
+
+        return {
+            content: data.quoteText.trim(),
+            author: data.quoteAuthor || "Неизвестный автор"
+        };
+    } catch (err) {
+        return {
+            content: "Слова улетают, письменное остаётся.",
+            author: "Латинская поговорка"
+        };
+    }
+}
+
+
+    async function loadReviews(count = 4) {
+        const temp = document.createElement("div");
+        temp.classList.add("review");
+        temp.innerHTML = `<p class="loading">Загрузка...</p>`;
+        wrapper.appendChild(temp);
+        const promises = [];
+        for (let i = 0; i < count; i++) {
+            promises.push(fetchReview());
+            await new Promise(r => setInterval(r, 1800));
+        }
+        reviews = await Promise.all((promises));
+        renderReviews();
+    }
+
+
+function renderReviews() {
+    wrapper.innerHTML = "";
+    reviews.forEach(r => {
+        const div = document.createElement("div");
+        div.classList.add("review");
+        div.innerHTML = `<p>"${r.content}"</p><span>- ${r.author}</span>`;
+        wrapper.appendChild(div);
+    });
+    showReview(currentIndex);
+}
+
+function showReview(index) {
+    if (index < 0) currentIndex = reviews.length - 1;
+    else if (index >= reviews.length) currentIndex = 0;
+    else currentIndex = index;
+    wrapper.style.transform = `translateX(-${currentIndex * 100}%)`;
+}
+
+prevBtn.addEventListener("click", () => {
+    showReview(currentIndex - 1);
+});
+nextBtn.addEventListener("click", () => {
+    showReview(currentIndex + 1);
+});
+
+setInterval(() => {
+    showReview(currentIndex + 1);
+}, 5000);
+
+loadReviews();
+
+
+
+async function loadRandomImages(count = 6) {
+    const container = document.getElementById("images");
+    container.innerHTML = ""; 
+
+    for (let i = 0; i < count; i++) {
+        const img = document.createElement("img");
+        img.src = `https://picsum.photos/300?random=${Math.random()}`;
+        img.alt = "Random image";
+        img.style.margin = "10px";
+        img.style.borderRadius = "10px";
+        container.appendChild(img);
+    }
+}
+loadRandomImages(6);
